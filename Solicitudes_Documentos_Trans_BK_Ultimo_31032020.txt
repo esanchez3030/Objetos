@@ -1,0 +1,61 @@
+USE [Dispositivos]
+GO
+
+/****** Object:  Table [dbo].[Solicitudes_Documentos_Trans]    Script Date: 4/1/2020 8:55:40 AM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[Solicitudes_Documentos_Trans](
+	[Documento_Numero] [int] NOT NULL,
+	[Solicitud_Numero] [int] NOT NULL,
+	[Documento_Nombre] [varchar](50) NOT NULL,
+	[Documento_Estado_Numero] [tinyint] NOT NULL,
+	[Documento_Tipo_Numero] [tinyint] NOT NULL,
+	[Documento_Observacion] [varchar](300) NOT NULL,
+	[Registro_Estado] [char](1) NOT NULL,
+	[Registro_Usuario] [varchar](60) NOT NULL,
+	[Registro_Fecha] [datetime] NOT NULL,
+ CONSTRAINT [PK_Solicitudes_Documentos_Trans] PRIMARY KEY CLUSTERED 
+(
+	[Documento_Numero] ASC,
+	[Solicitud_Numero] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[Solicitudes_Documentos_Trans] ADD  CONSTRAINT [DF_Solicitudes_Documentos_Trans_Documento_Estado_Numero]  DEFAULT ((1)) FOR [Documento_Estado_Numero]
+GO
+
+ALTER TABLE [dbo].[Solicitudes_Documentos_Trans] ADD  CONSTRAINT [DF_Solicitudes_Documentos_Trans_Registro_Estado]  DEFAULT ('A') FOR [Registro_Estado]
+GO
+
+ALTER TABLE [dbo].[Solicitudes_Documentos_Trans] ADD  CONSTRAINT [DF_Solicitudes_Documentos_Trans_Registro_Usuario]  DEFAULT (suser_sname()) FOR [Registro_Usuario]
+GO
+
+ALTER TABLE [dbo].[Solicitudes_Documentos_Trans] ADD  CONSTRAINT [DF_Solicitudes_Documentos_Trans_Registro_Fecha]  DEFAULT (getdate()) FOR [Registro_Fecha]
+GO
+
+ALTER TABLE [dbo].[Solicitudes_Documentos_Trans]  WITH NOCHECK ADD  CONSTRAINT [FK_SolDoc_DocEsta] FOREIGN KEY([Documento_Estado_Numero])
+REFERENCES [dbo].[Documentos_Estados_Cata] ([Documento_Estado_Numero])
+GO
+
+ALTER TABLE [dbo].[Solicitudes_Documentos_Trans] CHECK CONSTRAINT [FK_SolDoc_DocEsta]
+GO
+
+ALTER TABLE [dbo].[Solicitudes_Documentos_Trans]  WITH CHECK ADD  CONSTRAINT [FK_Solicitudes_Documentos_Trans_Documentos_Tipo_Cata] FOREIGN KEY([Documento_Tipo_Numero])
+REFERENCES [dbo].[Documentos_Tipo_Cata] ([Documento_Tipo_Numero])
+GO
+
+ALTER TABLE [dbo].[Solicitudes_Documentos_Trans] CHECK CONSTRAINT [FK_Solicitudes_Documentos_Trans_Documentos_Tipo_Cata]
+GO
+
+ALTER TABLE [dbo].[Solicitudes_Documentos_Trans]  WITH CHECK ADD  CONSTRAINT [FKSolicitud_845689] FOREIGN KEY([Solicitud_Numero])
+REFERENCES [dbo].[Solicitudes_Dispositivos_Trans] ([Solicitud_Numero])
+GO
+
+ALTER TABLE [dbo].[Solicitudes_Documentos_Trans] CHECK CONSTRAINT [FKSolicitud_845689]
+GO
+

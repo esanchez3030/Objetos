@@ -1,0 +1,62 @@
+USE [Dispositivos]
+GO
+
+/****** Object:  StoredProcedure [dbo].[Proc_Solicitudes_Documentos_Trans_Consulta]    Script Date: 4/1/2020 8:54:50 AM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+-- ____________________________________________Dispositivos_________________________________________
+/*
+' 	 
+'
+' Brief Description: este procedimiento consulta los datos requeridos de una solicitud de Documento. 
+' 	 Inserta en la Tabla: Solicitudes_Documentos_Trans
+'
+' Author: SSRL\e.sanchez
+' alterd Date: 31/03/2020
+'*****************************************************************
+' Modified By:
+' Modification Date:
+' Purpose of Modification:
+'*****************************************************************
+*/
+-- ______________________________________________________________________________________________________
+-- Proc_Solicitudes_Documentos_Trans_Consulta
+
+ALTER Procedure [dbo].[Proc_Solicitudes_Documentos_Trans_Consulta]
+  (
+   @Documento_Numero TinyInt = 0,
+   @Solicitud_Numero Int = 0
+  )
+
+As
+
+Begin
+
+  Select sdt.Documento_Numero,
+         sdt.Solicitud_Numero,
+		 sdt.Documento_Nombre,
+         sdt.Documento_Estado_Numero,
+		 dec.Documento_Estado_Descripcion,         
+		 sdt.Documento_Tipo_Numero,
+		 dtc.Documento_Tipo_Descripcion,
+         sdt.Documento_Observacion,
+         sdt.Registro_Estado,
+         sdt.Registro_Usuario,
+         sdt.Registro_Fecha
+    From Solicitudes_Documentos_Trans sdt With(NoLock)
+   Inner Join Documentos_Estados_Cata dec With(NoLock)
+      On sdt.Documento_Estado_Numero = dec.Documento_Estado_Numero
+   Inner Join Documentos_Tipo_Cata dtc With(noLock)
+      On sdt.Documento_Tipo_Numero = dtc.Documento_Tipo_Numero
+   Where Documento_Numero = @Documento_Numero
+     And Solicitud_Numero = @Solicitud_Numero
+	 And sdt.Registro_Estado = 'A'
+	 And dec.Registro_Estado = 'A'
+
+End
+GO
+

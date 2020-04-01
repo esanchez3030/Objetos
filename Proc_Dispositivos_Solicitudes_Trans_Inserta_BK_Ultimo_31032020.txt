@@ -1,0 +1,150 @@
+USE [Dispositivos]
+GO
+
+/****** Object:  StoredProcedure [dbo].[Proc_Dispositivos_Solicitudes_Trans_Inserta]    Script Date: 4/1/2020 8:55:07 AM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+-- ____________________________________________Dispositivos_________________________________________
+/*
+' 	 
+'
+' Brief Description: este procedimiento inserta los datos requeridos de una solicitud. 
+' 	 Inserta en la Tabla: Dispositivos_Solicitudes_Trans
+'
+' Author: SSRL\f.ventura
+' alterd Date: 04/03/2020
+'*****************************************************************
+' Modified By:
+' Modification Date:
+' Purpose of Modification:
+'*****************************************************************
+*/
+-- ______________________________________________________________________________________________________
+-- Proc_Dispositivos_Solicitudes_Trans_Inserta
+
+ALTER Procedure [dbo].[Proc_Dispositivos_Solicitudes_Trans_Inserta]
+  (
+   @Solicitante_Usuario_Cuenta Varchar(60), -- @Solicitante_Correo_Electronico
+   @Afiliado_Cedula varchar(11),
+   @Afiliado_Telefono_1 varchar(20),
+   @Afiliado_Telefono_2 varchar(20),
+   @Afiliado_Correo_Electronico varchar(60),
+   @Afiliado_NSS bigint = Null,
+   @Afiliado_Nombre varchar(90),
+   @Afiliado_Fecha_Nacimiento varchar(15),
+   @Afiliado_Sexo char(1),
+   @Afiliado_Direccion varchar(300),
+   @Afiliado_Sector varchar(150),  
+   @Municipio_Numero SmallInt   
+  )
+
+As
+
+Begin
+
+  Set DateFormat DMY
+
+  Declare @Solicitud_Numero Int,
+          @Solicitante_Cedula Varchar(11),
+          @Solicitante_Telefono Varchar(20) -- Datos del Usuario Registrado en la Oficina Virtual.
+
+  Select @Solicitante_Cedula = Usuario_Cedula,
+         @Solicitante_Telefono = Usuario_Telefono_1
+	From SisalrilVirtual.Dbo.Usuarios_Master With(NoLock)
+	Where Usuario_Cuenta = @Solicitante_Usuario_Cuenta
+	  And Registro_Estado = 'A'
+	  And Estado_Clave_Codigo = 'D'
+
+  Insert Into Solicitudes_Dispositivos_Trans
+    (
+	 Afiliado_Cedula,
+     Afiliado_Telefono_1,
+     Afiliado_Telefono_2,
+     Afiliado_Correo_Electronico,
+     Afiliado_NSS,
+     Afiliado_Nombre,
+     Afiliado_Fecha_Nacimiento,
+     Afiliado_Sexo,
+     Afiliado_Direccion,
+     Afiliado_Sector,
+	 Afiliado_Disponibilidad_Monto,
+     Solicitante_Cedula,
+     Solicitante_Telefono,
+     Solicitante_Correo_Electronico,
+     CIE10_Diagnostico_Codigo_1,
+     CIE10_Diagnostico_Codigo_2,
+     Plan_Tipo_Numero,
+     Municipio_Numero,
+     Solicitud_Observacion,
+     Solicitud_Estado_Numero,
+     Proveedor_Numero,
+     Registro_Estado,
+     Registro_Usuario,
+     Registro_Fecha
+	)
+   Values
+    (
+	 @Afiliado_Cedula,
+     @Afiliado_Telefono_1,
+     @Afiliado_Telefono_2,
+     @Afiliado_Correo_Electronico,
+     @Afiliado_NSS,
+     @Afiliado_Nombre,
+     Convert(Datetime,Convert(Char(10),@Afiliado_Fecha_Nacimiento,103)),
+     @Afiliado_Sexo,
+     @Afiliado_Direccion,
+     @Afiliado_Sector,
+	 0.00,  -- Afiliado_Disponibilidad_Monto
+     @Solicitante_Cedula,
+     @Solicitante_Telefono,
+     @Solicitante_Usuario_Cuenta,
+     '', -- CIE10_Diagnostico_Codigo_1
+     '', -- CIE10_Diagnostico_Codigo_2
+     0, -- Plan_Tipo_Numero (No Especificado)
+     @Municipio_Numero,
+     '', -- Solicitud_Observacion
+     1, -- Solicitud_Estado_Numero (Pendiente)
+     0, -- Proveedor_Numero
+     'A', -- Registro_Estado
+     @Solicitante_Usuario_Cuenta,
+     GETDATE()	-- Registro_Fecha
+	)
+
+  Set @Solicitud_Numero = @@Identity
+
+  Select Solicitud_Numero,
+         Afiliado_Cedula,
+         Afiliado_Telefono_1,
+         Afiliado_Telefono_2,
+         Afiliado_Correo_Electronico,
+         Afiliado_NSS,
+         Afiliado_Nombre,
+         Afiliado_Fecha_Nacimiento,
+         Afiliado_Sexo,
+         Afiliado_Direccion,
+         Afiliado_Sector,
+		 Afiliado_Disponibilidad_Monto,
+         Solicitante_Cedula,
+         Solicitante_Telefono,
+         Solicitante_Correo_Electronico,
+         CIE10_Diagnostico_Codigo_1,
+         CIE10_Diagnostico_Codigo_2,
+         Plan_Tipo_Numero,
+         Municipio_Numero,
+         Solicitud_Observacion,
+         Solicitud_Estado_Numero,
+         Proveedor_Numero,
+         Registro_Estado,
+         Registro_Usuario,
+         Registro_Fecha,
+		 Mensaje = 'Registro guardado satisfactoriamente'
+    From Solicitudes_Dispositivos_Trans With(NoLock)
+   Where Solicitud_Numero = @Solicitud_Numero
+
+End
+GO
+

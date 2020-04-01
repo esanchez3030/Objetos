@@ -1,0 +1,87 @@
+USE [Dispositivos]
+GO
+
+/****** Object:  StoredProcedure [dbo].[Proc_Solicitudes_Documentos_Trans_Inserta]    Script Date: 4/1/2020 8:54:36 AM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+-- ____________________________________________Dispositivos_________________________________________
+/*
+' 	 
+'
+' Brief Description: este procedimiento inserta los datos requeridos de una solicitud de Documento. 
+' 	 Inserta en la Tabla: Solicitudes_Documentos_Trans
+'
+' Author: SSRL\e.sanchez
+' alterd Date: 31/03/2020
+'*****************************************************************
+' Modified By:
+' Modification Date:
+' Purpose of Modification:
+'*****************************************************************
+*/
+-- ______________________________________________________________________________________________________
+-- Proc_Solicitudes_Documentos_Trans_Inserta
+
+ALTER Procedure [dbo].[Proc_Solicitudes_Documentos_Trans_Inserta]
+  (
+   @Documento_Numero TinyInt,
+   @Solicitud_Numero Int,
+   @Documento_Nombre Varchar(50),
+   @Documento_Estado_Numero	TinyInt,
+   @Documento_Tipo_Numero TinyInt,
+   @Documento_Observacion Varchar(100) = '',
+   @Registro_Usuario Varchar(60)
+  )
+
+As
+
+Begin
+
+  Set DateFormat DMY
+
+  Insert Into Solicitudes_Documentos_Trans
+    (
+     Documento_Numero,
+     Solicitud_Numero,
+	 Documento_Nombre,
+     Documento_Estado_Numero,
+	 Documento_Tipo_Numero,
+     Documento_Observacion,
+     Registro_Estado,
+     Registro_Usuario,
+     Registro_Fecha
+	)
+   Values
+    (
+     @Documento_Numero,
+     @Solicitud_Numero,
+	 @Documento_Nombre,
+     @Documento_Estado_Numero, -- 1 = Pendiente, 2 = Aprobada, 3 = Rechazada, 4 = Cancelada
+	 @Documento_Tipo_Numero,
+     @Documento_Observacion,   
+     'A', -- Registro_Estado
+     @Registro_Usuario,
+     GetDate()	-- Registro_Fecha
+	)
+
+  Select Documento_Numero,
+         Solicitud_Numero,
+		 Documento_Nombre,
+         Documento_Estado_Numero,
+		 Documento_Tipo_Numero,
+         Documento_Observacion,
+         Registro_Estado,
+         Registro_Usuario,
+         Registro_Fecha,
+	     Mensaje = 'Registro guardado satisfactoriamente'
+    From Solicitudes_Documentos_Trans With(NoLock)
+   Where Documento_Numero = @Documento_Numero
+     And Solicitud_Numero = @Solicitud_Numero
+
+End
+GO
+

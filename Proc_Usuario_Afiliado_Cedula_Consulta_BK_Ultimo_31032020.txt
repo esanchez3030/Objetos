@@ -1,0 +1,185 @@
+USE [Dispositivos]
+GO
+
+/****** Object:  StoredProcedure [dbo].[Proc_Usuario_Afiliado_Cedula_Consulta]    Script Date: 4/1/2020 8:54:24 AM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+-- ____________________________________________Dispositivos_________________________________________
+/*
+' 	 
+'
+' Brief Description: este procedimiento valida los Datos del Afiliado y del Usuario que esta realizando la consulta.
+' 	 Consulta en la Tabla: SisalrilVirtual.dbo.Usuarios_Master / SisalrilVirtual.Dbo.Entidades_Master / Simon.Dbo.Afiliados_ARS_Vista / Simon.Dbo.Ars_Master
+'
+' Author: SSRL\e.sanchez
+' alterd Date: 12/03/2020
+'*****************************************************************
+' Modified By:
+' Modification Date:
+' Purpose of Modification:
+'*****************************************************************
+*/
+-- ______________________________________________________________________________________________________
+-- Exec Proc_Usuario_Afiliado_Cedula_Consulta '00111326724','eduardosanz90@gmail.com'
+-- Exec Proc_Usuario_Afiliado_Cedula_Consulta '00111326724','virginia_vizcaino@arspalic.com.do'
+-- Exec Proc_Usuario_Afiliado_Cedula_Consulta '00111326724','EMateo@arssenasa.gov.do'
+-- Exec Proc_Usuario_Afiliado_Cedula_Consulta '05800319021','EMateo@arssenasa.gov.do'
+-- Exec Proc_Usuario_Afiliado_Cedula_Consulta '05800319021',''
+-- Exec Proc_Usuario_Afiliado_Cedula_Consulta '05800319021','999999'
+ 
+ALTER Procedure [dbo].[Proc_Usuario_Afiliado_Cedula_Consulta]
+ (
+  @Afiliado_Cedula Varchar(11),
+  @Usuario_Cuenta Varchar(60) -- Funciona para la Cuenta del Afiliado y Cuenta de la Entidad.  
+ )
+
+As
+
+Begin 
+
+  Declare @Usuario_Tipo_Numero_Cuent TinyInt = 0,
+          @Usuario_Tipo_Numero_Ced TinyInt = 0,
+          @Ars_Numero_Cuent TinyInt = 0,
+		  @Ars_Numero_Ced TinyInt = 0
+
+     -- Busca tipo de Usuario.
+   Select @Usuario_Tipo_Numero_Cuent = IsNull(u.Usuario_Tipo_Numero,0),
+          @Ars_Numero_Cuent = IsNull(e.ARS_Numero,0)
+	 From SisalrilVirtual.Dbo.Usuarios_Master u With(NoLock)
+	Inner Join SisalrilVirtual.Dbo.Entidades_Master e With(NoLock)
+	   On u.Empleador_Registro_Patronal = e.Empleador_Registro_Patronal
+	Where u.Usuario_Cuenta = @Usuario_Cuenta -- Cuenta del Afiliado o de ARS
+	  -- And u.Empleador_Registro_Patronal = 0
+	  -- And u.Usuario_Tipo_Numero = 4
+	  And u.Estado_Clave_Codigo = 'D'
+	  And u.Registro_Estado = 'A'
+
+  -- Buscando la ARS del Afiliado.
+  Select Top 1
+         @Usuario_Tipo_Numero_Ced = IsNull(e.Usuario_Tipo_Numero,0),
+		 @Ars_Numero_Ced = IsNull(av.ARS_Numero,0)		 
+    From SisalrilVirtual.Dbo.Usuarios_Master e With(NoLock)
+   Inner Join Simon.Dbo.Afiliados_ARS_Vista av With(NoLock)
+      On e.Usuario_NSS = av.Afiliado_NSS
+   -- Inner Join Simon.Dbo.Ars_Master a With(NoLock)
+   --   On av.Ars_Numero = a.Ars_Numero
+   Where e.Usuario_Cedula = @Afiliado_Cedula -- Cédula del Afiliado
+     And e.Registro_Estado = 'A'
+	 And e.Estado_Clave_Codigo = 'D'	 
+  -- And e.Empleador_Registro_Patronal = 0
+   Order By e.Registro_Fecha Desc
+
+      If @Usuario_Tipo_Numero_Cuent = 4 -- Usuario Tipo ARS.
+	 And @Ars_Numero_Cuent > 0
+	 And @Ars_Numero_Cuent = @Ars_Numero_Ced
+
+  Begin
+  -- Devuelve los datos del Afiliado si es Usuario Tipo Ars.
+  Select Top 1
+         e.Usuario_Cedula,
+         e.Usuario_NSS, 
+         Usuario_Fecha_Nacimiento = Convert(Varchar(10), e.Usuario_Fecha_Nacimiento, 103),
+         e.Usuario_Sexo,
+         e.Usuario_Cuenta, 
+         e.Usuario_Nombre_Completo,
+         Usuario_Numero_Telefonico = Replace(Replace(Replace(e.Usuario_Telefono_1, '(', ''), ')', ''), '-', ''),
+		 ARS_Numero = IsNull(av.ARS_Numero,0),
+		 ARS_Nombre = IsNull(a.Empleador_Razon_Social,''),
+		 Mensaje = 'Consulta realizada satisfactoriamente'
+    From SisalrilVirtual.Dbo.Usuarios_Master e With(NoLock)
+    Inner Join Simon.Dbo.Afiliados_ARS_Vista av With(NoLock)
+      On e.Usuario_NSS = av.Afiliado_NSS
+    Inner Join SisalrilVirtual.Dbo.Entidades_Master a With(NoLock)
+      On av.Ars_Numero = a.Ars_Numero
+    --Inner Join Simon.Dbo.Ars_Master a With(NoLock)
+    --  On av.Ars_Numero = a.Ars_Numero
+   Where e.Usuario_Cedula = @Afiliado_Cedula 
+     And e.Registro_Estado = 'A'
+	 And e.Estado_Clave_Codigo In('V','D')
+	 And a.Registro_Estado = 'A'
+	 And a.Ars_Numero > 0
+   Order By e.Registro_Fecha Desc
+   
+    End
+   
+  If @Ars_Numero_Cuent = 0 -- No es Usuario Tipo ARS.
+ And @Usuario_Tipo_Numero_Ced > 0 -- Cualquier Usuario que quiera consultar.
+
+  Begin
+
+  Select Top 1 
+         e.Usuario_Cedula,
+         e.Usuario_NSS, 
+         Usuario_Fecha_Nacimiento = Convert(Varchar(10), e.Usuario_Fecha_Nacimiento, 103),
+         Usuario_Sexo = IIF(e.Usuario_Sexo = 'M', 'Masculino', 'Femenino'),
+         e.Usuario_Cuenta, 
+         e.Usuario_Nombre_Completo,
+         Usuario_Numero_Telefonico = Replace(Replace(Replace(e.Usuario_Telefono_1, '(', ''), ')', ''), '-', ''),
+		 ARS_Numero = IsNull(av.ARS_Numero,0),
+		 ARS_Nombre = IsNull(a.Empleador_Razon_Social,''),
+		 --ARS_Nombre = IsNull(a.ARS_Nombre,''),
+		 Mensaje = 'Consulta realizada satisfactoriamente'
+    From SisalrilVirtual.Dbo.Usuarios_Master e With(NoLock)
+    Inner Join Simon.Dbo.Afiliados_ARS_Vista av With(NoLock)
+      On e.Usuario_NSS = av.Afiliado_NSS
+    Inner Join SisalrilVirtual.Dbo.Entidades_Master a With(NoLock)
+      On av.Ars_Numero = a.Ars_Numero
+    --Inner Join Simon.Dbo.Ars_Master a With(NoLock)
+    --  On av.Ars_Numero = a.Ars_Numero
+   Where e.Usuario_Cedula = @Afiliado_Cedula 
+     And e.Registro_Estado = 'A'
+	 And e.Estado_Clave_Codigo In('V','D')
+	 And a.Registro_Estado = 'A'
+	 And a.Ars_Numero > 0
+
+   Order By e.Registro_Fecha Desc
+
+   End
+
+   If @Usuario_Tipo_Numero_Cuent = 0 -- Usuario Tipo ARS.
+  And @Ars_Numero_Cuent = 0
+  
+  Begin
+
+  Select Top 1
+         Usuario_Cedula = @Afiliado_Cedula,
+         Usuario_NSS = 0,
+         Usuario_Fecha_Nacimiento = Convert(Varchar(10),''),
+         Usuario_Sexo = '',
+         Usuario_Cuenta = @Usuario_Cuenta,
+         Usuario_Nombre_Completo = '',
+         Usuario_Numero_Telefonico = '',
+		 ARS_Numero = 0,
+		 ARS_Nombre = 0,
+		 Mensaje = 'Este Afiliado no existe ó no pertenece a su ARS'
+
+End
+
+
+If @Usuario_Tipo_Numero_Cuent = 4 -- Usuario Tipo ARS.
+	   And @Ars_Numero_Cuent > 0
+	   And @Ars_Numero_Cuent <> @Ars_Numero_Ced
+  
+  Begin
+
+  Select Top 1
+         Usuario_Cedula = @Afiliado_Cedula,
+         Usuario_NSS = 0,
+         Usuario_Fecha_Nacimiento = Convert(Varchar(10),''),
+         Usuario_Sexo = '',
+         Usuario_Cuenta = @Usuario_Cuenta,
+         Usuario_Nombre_Completo = '',
+         Usuario_Numero_Telefonico = '',
+		 ARS_Numero = 0,
+		 ARS_Nombre = 0,
+		 Mensaje = 'Este Afiliado no pertenece a su ARS'
+
+End
+ End
+GO
+
