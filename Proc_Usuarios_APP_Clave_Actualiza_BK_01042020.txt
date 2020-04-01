@@ -1,0 +1,399 @@
+USE [SisalrilVirtual]
+GO
+/****** Object:  StoredProcedure [dbo].[Proc_Usuarios_APP_Clave_Actualiza]    Script Date: 4/1/2020 5:01:26 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+-- _________________________________________________________________________________Simon ++________
+--
+-- Proyecto: SISALRIL Virtual
+-- Modulo: Acceso Usuarios
+-- Author: GIS - Subgerencia Desarrollo de BDD/DTI
+-- Fecha: 19/06/2013
+-- Objetivo: Registra el cambio de clave del usuario
+-- Ultima Actualizacion: 
+-- Responsable:
+-- __________________________________________________________________________________________________
+
+ALTER Procedure [dbo].[Proc_Usuarios_APP_Clave_Actualiza]
+(
+  @Usuario_Cuenta Varchar(60),
+  @Usuario_Clave Varchar(100),
+  @Usuario_Clave_Nueva Varchar(100),
+  @Usuario_IP Varchar(50)
+  )
+As
+
+Begin
+
+  Set dateFormat dmy
+
+  /*
+
+  Exec  Proc_Usuarios_Clave_Actualiza 'ALbania@Gmail.com',
+                                                   'Probando',
+                                                   'Probando3',
+                                                   '1.1.1.1' 
+
+
+  Exec  Proc_Usuarios_Clave_Actualiza 'Rflaquer@Gmail.com',
+                                                   'Probando25',  
+                                                   'Probando26',
+                                                   '1.1.1.1' 
+ 
+  */
+
+  If Ltrim(Rtrim(isnull(@Usuario_Cuenta,''))) = '' 
+  or Ltrim(Rtrim(isnull(@Usuario_Clave,''))) = '' 
+  or Ltrim(Rtrim(isnull(@Usuario_Clave_Nueva,''))) = '' 
+  or Ltrim(Rtrim(isnull(@Usuario_IP,''))) = '' 
+  Begin
+
+    Raiserror('Los Parametroa Usuario_Cuenta, Usuario_Clave, Usuario_Clave_Nueva y Usuario_IP son Obligatorios',16,1)
+
+    Return
+
+  End
+
+  Set dateFormat dmy
+
+  Declare @Valido char(1),
+          @Mensaje Varchar(500),
+          @Motivo_Numero Tinyint,
+          @Usuario_NSS Bigint,
+          @Empleador_Registro_Patronal int,
+          @Usuario_Cedula Varchar(11),
+          @Usuario_Nombres Varchar(50),
+          @Usuario_Clave_Registrada  Varchar(100),
+          @Acceso Char(1),
+          @Registros int
+
+  Set @Acceso = 'N'
+       
+ 
+  Set @Valido = ''
+
+  -- Buscando el Usuario en Usuarios Master
+  Select @Usuario_NSS = Usuario_NSS,
+         @Usuario_Cedula = Usuario_Cedula,
+         @Usuario_Clave_Registrada = Usuario_Clave,
+         @Empleador_Registro_Patronal = Empleador_Registro_Patronal
+     From dbo.Usuarios_Master With(Nolock)
+       Where Usuario_Cuenta = @Usuario_Cuenta
+
+  -- Buscando el Usuario en Ciudadanos
+  Select @Usuario_Nombres = Ciudadano_Nombres
+    From Simon.dbo.TSS_Ciudadanos_Master With(Nolock)
+      Where Ciudadano_NSS = @Usuario_NSS
+        and Causa_Tipo_codigo <> 'C'
+        and Ciudadano_No_Documento =  @Usuario_Cedula
+
+  --
+  -- Validando que la cuenta esta registrada para un usuario
+  --
+  If @Valido = ''
+  Begin 
+ 
+    If isnull(@Usuario_NSS,0) = 0  -- No esta en USuario Master 
+     Begin
+
+      Set @Valido = 'N'
+
+      Set @Motivo_Numero = 21
+
+    End
+
+  End
+
+
+  --
+  -- Validando la cuenta con su estado
+  --
+  If @Valido = ''
+  Begin 
+ 
+    If Not exists(Select * 
+                    From dbo.Usuarios_Master With(Nolock)
+                      Where Usuario_Cuenta = @Usuario_Cuenta
+                        and Estado_Clave_Codigo in ('D','V','T')
+                        and Registro_Estado = 'A')
+    Begin
+
+      Set @Motivo_Numero = 12
+
+      Set @Valido = 'N'
+   
+    End
+
+  End
+
+
+  --
+  -- Validando la cuenta con su clave
+  --
+  If @Valido = ''
+  Begin 
+ 
+    If @Usuario_Clave <> @Usuario_Clave_Registrada
+    
+    Begin
+
+      Set @Motivo_Numero = 22
+
+      Set @Valido = 'N'
+   
+    End
+
+  End
+
+  
+  --
+  -- Validando la cuenta para su NSS en Ciudadano
+  --
+  If @Valido = ''
+  Begin 
+ 
+    If @Usuario_Nombres is null
+    Begin
+
+      Set @Valido = 'N'
+
+      Set @Motivo_Numero = 12
+ 
+    End
+
+  End
+
+  --
+  -- Validando la cuenta versus Roles
+  --
+  If @Valido = ''
+  Begin 
+
+    If Not Exists(Select Usuario_Rol_Numero
+                    From dbo.Usuarios_Roles_Trans
+                      Where Usuario_Cuenta = @Usuario_Cuenta
+                        and Empleador_Registro_Patronal = @Empleador_Registro_Patronal
+                        and Registro_Estado = 'A')
+
+    Begin
+
+      Set @Valido = 'N'
+
+      Set @Motivo_Numero = 24
+
+    End 
+
+  End 
+
+
+  --
+  -- Validando la clave nueva
+  --
+  If @Valido = ''
+  Begin 
+
+    If isnull(@Usuario_Clave_Nueva,'') = ''
+    Begin
+
+      Set @Valido = 'N'
+
+      Set @Motivo_Numero = 25
+
+    End 
+
+  End 
+
+  --
+  -- Validando la clave nueva versus actual
+  --
+  If @Valido = ''
+  Begin 
+
+    If isnull(@Usuario_Clave_Nueva,'') = @Usuario_Clave
+    Begin
+
+      Set @Valido = 'N'
+
+      Set @Motivo_Numero = 26
+
+    End 
+
+  End 
+
+
+  --
+  -- Guardando la clave nueva
+  -- 
+  If @Valido = ''
+  Begin 
+
+    Set @Acceso = 'S'
+
+    Set @Motivo_Numero = 27
+
+    Select @Mensaje =  Motivo_Mensaje
+    From dbo.Usuarios_Motivos_Cata 
+      Where Motivo_Numero = @Motivo_Numero
+
+    Set @Valido = 'S'
+
+    Update dbo.Usuarios_Master
+      Set Usuario_Clave = @Usuario_Clave_Nueva,
+          Usuario_Clave_Fecha_Bloqueo = case When @Empleador_Registro_Patronal <> 0 
+                                             then getdate()+120
+                                             else  Usuario_Clave_Fecha_Bloqueo end,
+          Estado_Clave_Codigo = 'D',
+          Registro_Estado = 'A', 
+          Registro_Usuario = @Usuario_Cuenta,
+          Registro_Fecha  = getdate()
+      Where Usuario_Cuenta = @Usuario_Cuenta
+
+   -- Paso para sincronizar la clave en RobotSimon (RefUsuarios)
+   Update r
+      Set r.UsuariosClave = @Usuario_Clave_Nueva
+     From RobotSimon.Dbo.RefUsuarios r
+    Inner Join Usuarios_Master u
+       On r.UsuariosUsuario = u.Usuario_Cuenta
+    Inner Join Usuarios_Roles_Trans x
+       On u.Usuario_Cuenta = x.Usuario_Cuenta
+      And u.Empleador_Registro_Patronal = x.Empleador_Registro_Patronal
+      And x.Usuario_Rol_Numero = 10
+      And x.Registro_Estado = 'A'
+      And u.Usuario_Tipo_Numero = 4
+    Where u.Usuario_Cuenta = @Usuario_Cuenta
+      
+
+    Select Usuario_Cuenta,
+           Usuario_Tipo_Numero,
+           Empleador_Registro_Patronal,
+           Empleado_Numero,
+           Usuario_Clave,
+           Usuario_Clave_Fecha_Bloqueo,
+           Usuario_Palabra_Recuperacion,
+           Usuario_Cedula,
+           Usuario_NSS,
+           Usuario_Nombre_Completo,
+           Usuario_Fecha_Nacimiento,
+           Usuario_Telefono_1,
+           Usuario_Telefono_2,
+           Usuario_Sexo,
+           Estado_Clave_Codigo,
+           Registro_Estado,
+           Registro_Usuario,
+           Registro_Fecha,
+           Mensaje = @Mensaje,
+           Valido = @Valido
+      From dbo.Usuarios_Master With(Nolock)
+        Where Usuario_Cuenta = @Usuario_Cuenta
+
+    --  Registrando la novedad
+    Insert into dbo.Usuarios_Novedades_Trans
+      (
+	   Usuario_Cuenta_Correo,
+	   Novedad_Fecha,
+	   Novedad_Tipo_Numero,
+	   Novedad_Origen_Numero,
+	   Solicitud_Numero,
+	   Motivo_Numero,
+	   Registro_Estado,
+	   Registro_Usuario,
+	   Registro_Fecha	 
+      )
+      Select @Usuario_Cuenta,
+             getdate(),
+             2, -- Cambio de clave
+			 1, -- Usuario
+			 Null,
+             27,
+             'A',
+             @Usuario_Cuenta,  
+             getdate() 
+
+    Set @Registros = 1
+
+
+  End
+  Else 
+  begin
+
+    Select @Mensaje =  Motivo_Mensaje
+    From dbo.Usuarios_Motivos_Cata 
+      Where Motivo_Numero = @Motivo_Numero
+
+    Set @Valido = 'N'
+
+    Select Usuario_Cuenta = @Usuario_Cuenta,
+           Usuario_Tipo_Numero = Convert(tinyint,0),
+           Empleador_Registro_Patronal = Convert(Int,0),
+           Empleado_Numero = Convert(Int,0),
+           Usuario_Clave = @Usuario_Clave,
+           Usuario_Clave_Fecha_Bloqueo = Getdate(),
+           Usuario_Palabra_Recuperacion = Convert(Varchar(100),''),
+           Usuario_Cedula = Convert(Varchar(11),''),
+           Usuario_NSS = Convert(Bigint,0),
+           Usuario_Nombre_Completo = Convert(Varchar(80),''),
+           Usuario_Fecha_Nacimiento = getdate(),
+           Usuario_Telefono_1 = Convert(Varchar(10),''),
+           Usuario_Telefono_2 = Convert(Varchar(10),''),
+           Usuario_Sexo = Convert(Varchar(1),''),
+           Usuario_Cargo =  Convert(Varchar(100),''),
+           Estado_Clave_Codigo =  Convert(Varchar(1),''),
+           Registro_Estado = Convert(Varchar(1),''),
+           Registro_Usuario = Convert(Varchar(50),''),
+           Registro_Fecha = getdate(),
+           Mensaje = @Mensaje,
+           Valido = @Valido
+
+    Set @Registros = 0
+
+  End
+
+  --
+  -- Guarda Bitacora
+  --
+  Declare @Bitacora_Detalle Varchar(500)
+  
+  Set @Bitacora_Detalle = Case When @Usuario_Clave is not null
+                               Then ' USUCLA:'+Ltrim(@Usuario_Clave)
+                               else '' end
+                          +
+                          Case When @Registros > 0
+                               Then ' REG:'+Ltrim(Convert(Varchar(10),@Registros))
+                               else '' end
+                          +
+                          Case When @Acceso = 'N'
+                               Then ' ACC:NO'
+                               else '' end
+  
+  Exec SISALRILVirtual.dbo.Proc_Usuarios_Bitacora_Guarda @Usuario_Cuenta,
+                                     21, -- Funcionalidad Numero    
+                                     @Bitacora_Detalle,  
+                                     @Usuario_IP
+
+
+ 
+End -- Fin del Procedimiento
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
