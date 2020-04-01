@@ -1,0 +1,175 @@
+Select * From Usuarios_Master With(NoLock)
+
+  Select Distinct 
+         Usuario_Cedula,
+         Usuario_Nss,
+		 Usuario_Nombre_Completo,
+		 Usuario_Fecha_Nacimiento,
+		 Usuario_Sexo
+    From Usuarios_Master With(NoLock)
+	Where Registro_Estado = 'A'
+	  and Usuario_Cedula <> ''
+	
+	LETITIA LOYA FERNÁNDEZ
+	RAFAEL SOLÍS PADRÓN
+	BONIFACIO CARREÓN MUÑOZ
+	REYES GRIJALVA DE JESÚS
+	BENIGNA SAUCEDA VÉLEZ
+
+drop table #Ciud
+
+	  Select Distinct 
+         Usuario_Cedula,
+         Usuario_Nss,
+		 Usuario_Nombre_Completo = Replace(Replace(Replace(Replace(Replace(Replace(Usuario_Nombre_Completo,'Á','A'),'É','E'),'Í','I'),'Ó','O'),'Ú','U'),'Ñ','N'),
+		 Usuario_Fecha_Nacimiento,
+		 Usuario_Sexo,
+		 Nombres = Convert(Varchar(50),''),
+		 Primer_Apellido = Convert(Varchar(50),''),
+		 Segundo_Apellido = Convert(Varchar(50),'')
+    Into #Ciud
+    From Usuarios_Master With(NoLock)
+	Where Registro_Estado = 'A'
+	  And Usuario_Cedula <> ''
+
+  Select * From #Ciud
+  where nombres = ''
+      
+  Update a
+     Set a.Nombres = 'ZENEIDA',
+	     a.Primer_Apellido = 'VASQUEZ',
+		 a.Segundo_Apellido = 'MEDINA'
+    From #Ciud a
+	where a.nombres = ''
+	And Usuario_Cedula = '65569724480'
+
+  delete from #Ciud
+  where usuario_nss = 0
+
+  Update a
+     Set a.Nombres = Replace(Replace(Replace(Replace(Replace(Replace(s.Usuario_Nombres,'Á','A'),'É','E'),'Í','I'),'Ó','O'),'Ú','U'),'Ñ','N'),
+	     a.Primer_Apellido = Replace(Replace(Replace(Replace(Replace(Replace(s.Usuario_Primer_Apellido,'Á','A'),'É','E'),'Í','I'),'Ó','O'),'Ú','U'),'Ñ','N'),
+		 a.Segundo_Apellido = Replace(Replace(Replace(Replace(Replace(Replace(s.Usuario_Segundo_Apellido,'Á','A'),'É','E'),'Í','I'),'Ó','O'),'Ú','U'),'Ñ','N')
+    From #Ciud a
+   Inner Join Usuarios_Solicitudes_Trans s
+      On a.Usuario_Cedula = s.Usuario_Cedula
+
+  Select * From #Ciud
+  WHERE USUARIO_NSS = 0
+
+    Select USUARIO_CEDULA,COUNT(*) From #Ciud
+	GROUP BY USUARIO_CEDULA
+	HAVING COUNT(*) > 1
+
+  Select USUARIO_NSS,COUNT(*) From #Ciud
+  GROUP BY USUARIO_NSS 
+  HAVING COUNT(*) > 1
+
+    Select * From #Ciud
+  WHERE USUARIO_NSS =328846100
+
+  UPDATE #Ciud
+  SET USUARIO_NSS = USUARIO_NSS+100
+  WHERE USUARIO_NSS = 328846100
+  AND USUARIO_CEDULA = '85141981556'
+
+  Select * From #Ciud
+  WHERE USUARIO_CEDULA = '96667249096'
+
+  SELECT * FROM SIMON.DBO.TSS_Ciudadanos_Master
+
+  INSERT INTO SIMON.DBO.TSS_Ciudadanos_Master
+   (
+    Ciudadano_NSS,
+    Ciudadano_Nombres,
+    Ciudadano_Primer_Apellido,
+    Ciudadano_Segundo_Apellido,
+    Estado_Civil_Codigo,
+    Ciudadano_Fecha_Nacimiento,
+    Ciudadano_Fecha_Nacimiento_DTI,
+    Ciudadano_No_Documento,
+    Documento_Tipo_Codigo,
+    Ciudadano_Sexo,
+    Provincia_Numero,
+    Sangre_Tipo_Numero,
+    Causa_Inhabilidad_Numero,
+    Nacionalidad_Numero,
+    Ciudadano_No_Documento_Anterior,
+    Ciudadano_NSS_Estatus,
+    Causa_Tipo_codigo,
+    Ciudadano_Acta_Nacimiento_Municipio,
+    Ciudadano_Acta_Nacimiento_Anio,
+    Ciudadano_Acta_Nacimiento_Numero,
+    Ciudadano_Acta_Nacimiento_Folio,
+    Ciudadano_Acta_Nacimiento_Libro,
+    Ciudadano_Acta_Nacimiento_Oficialia,
+    Fecha_Actualizacion_TSS,
+    Ciudadano_Cedula_Formateada,
+    Ciudadano_Nombre_Completo,
+    Ciudadano_Acta_Nacimiento_Unida,
+    Registro_Estado,
+    Registro_Usuario,
+    Registro_Fecha
+   )
+ SELECT USUARIO_NSS,
+        NOMBRES,
+		PRIMER_APELLIDO,
+		SEGUNDO_APELLIDO,
+		'S', -- ESTADO CIVIL
+        Ciudadano_Fecha_Nacimiento = USUARIO_FECHA_NACIMIENTO,
+    Ciudadano_Fecha_Nacimiento_DTI = USUARIO_FECHA_NACIMIENTO,
+    Ciudadano_No_Documento = USUARIO_CEDULA,
+    Documento_Tipo_Codigo = 'D',
+    Ciudadano_Sexo = USUARIO_SEXO,
+    Provincia_Numero = 99,
+    Sangre_Tipo_Numero = 1,
+    Causa_Inhabilidad_Numero = 0,
+    Nacionalidad_Numero = 1,
+    Ciudadano_No_Documento_Anterior = '',
+    Ciudadano_NSS_Estatus = 1,
+    Causa_Tipo_codigo = 'N',
+    Ciudadano_Acta_Nacimiento_Municipio = 1,
+    Ciudadano_Acta_Nacimiento_Anio = YEAR(USUARIO_FECHA_NACIMIENTO),
+    Ciudadano_Acta_Nacimiento_Numero = YEAR(USUARIO_FECHA_NACIMIENTO)+month(USUARIO_FECHA_NACIMIENTO),
+    Ciudadano_Acta_Nacimiento_Folio = '1',
+    Ciudadano_Acta_Nacimiento_Libro = '1',
+    Ciudadano_Acta_Nacimiento_Oficialia = '1',
+    Fecha_Actualizacion_TSS = getdate(),
+    Ciudadano_Cedula_Formateada = substring(usuario_cedula,1,3)+'-'+Substring(usuario_cedula,4,7)+'-'+Substring(usuario_cedula,11,1),
+    Ciudadano_Nombre_Completo = usuario_nombre_completo,
+    Ciudadano_Acta_Nacimiento_Unida = convert(varchar(100),YEAR(USUARIO_FECHA_NACIMIENTO)+YEAR(USUARIO_FECHA_NACIMIENTO)+month(USUARIO_FECHA_NACIMIENTO)+1+1+1+1),
+    Registro_Estado = 'A',
+    Registro_Usuario = 'developer',
+    Registro_Fecha = getdate()
+ FROM #Ciud
+
+--  Ciudadano_NSS	bigint	no	8	19   	0    
+--Ciudadano_Nombres	varchar	no	50	     	     
+--Ciudadano_Primer_Apellido	varchar	no	40	     	     
+--Ciudadano_Segundo_Apellido	varchar	no	40	     	     
+--Estado_Civil_Codigo	char	no	1	     	     
+--Ciudadano_Fecha_Nacimiento	varchar	no	30	     	     
+--Ciudadano_Fecha_Nacimiento_DTI	datetime	no	8	     	     
+--Ciudadano_No_Documento	varchar	no	25	     	     
+--Documento_Tipo_Codigo	char	no	1	     	     
+--Ciudadano_Sexo	char	no	1	     	     
+--Provincia_Numero	smallint	no	2	5    	0    
+--Sangre_Tipo_Numero	tinyint	no	1	3    	0    
+--Causa_Inhabilidad_Numero	smallint	no	2	5    	0    
+--Nacionalidad_Numero	smallint	no	2	5    	0    
+--Ciudadano_No_Documento_Anterior	varchar	no	11	     	     
+--Ciudadano_NSS_Estatus	char	no	1	     	     
+--Causa_Tipo_codigo	char	no	1	     	     
+--Ciudadano_Acta_Nacimiento_Municipio	varchar	no	6	     	     
+--Ciudadano_Acta_Nacimiento_Anio	varchar	no	4	     	     
+--Ciudadano_Acta_Nacimiento_Numero	varchar	no	10	     	     
+--Ciudadano_Acta_Nacimiento_Folio	varchar	no	10	     	     
+--Ciudadano_Acta_Nacimiento_Libro	varchar	no	10	     	     
+--Ciudadano_Acta_Nacimiento_Oficialia	varchar	no	10	     	     
+--Fecha_Actualizacion_TSS	datetime	no	8	     	     
+--Ciudadano_Cedula_Formateada	varchar	no	20	     	     
+--Ciudadano_Nombre_Completo	varchar	no	80	     	     
+--Ciudadano_Acta_Nacimiento_Unida	varchar	no	50	     	     
+--Registro_Estado	char	no	1	     	     
+--Registro_Usuario	varchar	no	20	     	     
+--Registro_Fecha	datetime	no	8	     	     

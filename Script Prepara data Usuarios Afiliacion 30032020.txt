@@ -1,0 +1,118 @@
+Select * From SisalrilVirtual.Dbo.Usuarios_master
+Where Usuario_Tipo_Numero = 1
+And Registro_Estado = 'A'
+And Estado_Clave_Codigo = 'D'
+
+Select * From Simon.Dbo.Afiliados_ARS_Vista
+
+Select * From Simon.Dbo.Afiliados_SFS_Master
+
+  Drop Table #UsuariosP
+
+  Select Distinct Usuario_Nss,
+	     Secuencia = Identity(Int,1,1),
+	     Ars = Convert(TinyInt,0)
+    Into #UsuariosP
+    From SisalrilVirtual.Dbo.Usuarios_Master With(NoLock)
+   Where Usuario_Tipo_Numero = 1
+     And Registro_Estado = 'A'
+     And Estado_Clave_Codigo = 'D'
+	 And Usuario_Nss > 0
+
+  Select *
+    Into Usuarios_Insertar_Afiliacion
+    From #UsuariosP
+   Order By Secuencia
+
+   Select * From Usuarios_Insertar_Afiliacion
+
+  Update a
+     Set a.Ars = 1 -- CMD
+    From #UsuariosP a
+   Where Secuencia Between 1 And 200
+
+  Update a
+     Set a.Ars = 2 -- Salud Segura
+    From #UsuariosP a
+   Where Secuencia Between 201 And 400
+
+  Update a
+     Set a.Ars = 3 -- ARS APS S A
+    From #UsuariosP a
+   Where Secuencia Between 401 And 600
+
+  Update a
+     Set a.Ars = 5 -- SIMAG
+    From #UsuariosP a
+   Where Secuencia Between 601 And 800
+
+  Update a
+     Set a.Ars = 6 -- GMA
+    From #UsuariosP a
+   Where Secuencia Between 801 And 1000
+
+  Update a
+     Set a.Ars = 13 -- Yunen
+    From #UsuariosP a
+   Where Secuencia Between 1001 And 1200
+
+  Update a
+     Set a.Ars = 14 -- Universal
+    From #UsuariosP a
+   Where Secuencia Between 1201 And 1400
+
+  Update a
+     Set a.Ars = 18 -- Monumental
+    From #UsuariosP a
+   Where Secuencia Between 1401 And 1600
+
+  Update a
+     Set a.Ars = 21 -- Futuro
+    From #UsuariosP a
+   Where Secuencia Between 1601 And 1800
+
+  Update a
+     Set a.Ars = 23 -- Primera
+    From #UsuariosP a
+   Where Secuencia Between 1801 And 2000
+
+  Update a
+     Set a.Ars = 34 -- Semunased
+    From #UsuariosP a
+   Where Secuencia Between 2001 And 2200
+
+  Update a
+     Set a.Ars = 36 -- Asemap
+    From #UsuariosP a
+   Where Secuencia Between 2201 And 2400
+
+  Update a
+     Set a.Ars = 43 -- Renacer
+    From #UsuariosP a
+   Where Secuencia Between 2401 And 2600
+
+  Update a
+     Set a.Ars = 49 -- Palic
+    From #UsuariosP a
+   Where Secuencia Between 2601 And 2800
+
+  Update a
+     Set a.Ars = 63 -- Meta Salud
+    From #UsuariosP a
+   Where Secuencia Between 2801 And 3000
+
+  --Select *
+  --  From sisalrilvirtual.dbo.entidades_master
+  -- Where Ars_Numero > 0
+  --   And Registro_Estado = 'A'
+  -- Order By Ars_Numero
+
+Insert Into Simon.Dbo.Afiliados_ARS_Vista
+(
+Ars_Numero,
+Afiliado_NSS
+)
+Select Ars,
+	   Usuario_Nss
+  From #UsuariosP With(NoLock)
+  Where Ars > 0
